@@ -6,7 +6,18 @@ import (
 	"log"
 )
 
+var (
+	brokers = ""
+	group   = ""
+	topic   = ""
+)
+
 func main() {
+	keepRunning := true
+	for keepRunning {
+		select {}
+	}
+
 	config, err := util.LoadConfig(".")
 	if err != nil {
 		log.Fatal("cannot load config", err)
