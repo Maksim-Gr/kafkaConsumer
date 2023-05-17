@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/Maksim-Gr/kafkaConsumer/pkg/util"
+	"gopkg.in/Shopify/sarama.v1"
 	"log"
 )
 
@@ -12,8 +13,18 @@ var (
 	topic   = ""
 )
 
+// Consumer represents consumer
+type Consumer struct {
+	ready chan bool
+}
+
 func main() {
 	keepRunning := true
+	log.Println("starting mirror consumer")
+
+	consumerConfig := sarama.NewConfig()
+	consumerConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
+
 	for keepRunning {
 		select {}
 	}
