@@ -7,6 +7,7 @@ import (
 	"github.com/Shopify/sarama"
 	"log"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -50,11 +51,32 @@ func main() {
 	consumerConfig := sarama.NewConfig()
 	consumerConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
 	consumerConfig.Consumer.MaxProcessingTime = 10 * time.Second
+
+	consumer := Consumer{
+		ready: make(chan bool),
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	client, err := sarama.NewConsumerGroup(strings.Split(brokers, ","), group, consumerConfig)
 	if err != nil {
 		log.Panicf("error creating consumer group clinet: %v", err)
 	}
+
+	consumptionPaused := false
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			if err := client.Consume(ctx, strings.Split(topic, ","), &consumer); err != nil {
+				log.Panicf("Error from consumer: %v", err)
+			}
+			if ctx.Err() != nil {
+				return
+			}
+			consumer.ready = make(chan bool)
+		}
+	}()
 
 	config, err := util.LoadConfig(".")
 	if err != nil {
