@@ -6,8 +6,11 @@ import (
 	"github.com/Maksim-Gr/kafkaConsumer/pkg/util"
 	"github.com/Shopify/sarama"
 	"log"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -80,6 +83,12 @@ func main() {
 
 	<-consumer.ready
 	log.Println("mirror consumer is up and running!...")
+
+	sigusr1 := make(chan os.Signal, 1)
+	signal.Notify(sigusr1, syscall.SIGUSR1)
+
+	sigterm := make(chan os.Signal, 1)
+	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 
 	config, err := util.LoadConfig(".")
 	if err != nil {
