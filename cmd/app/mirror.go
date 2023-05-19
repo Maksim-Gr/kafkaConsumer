@@ -47,6 +47,18 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	}
 }
 
+func toggleConsumptionFlow(client sarama.ConsumerGroup, isPaused *bool) {
+	if *isPaused {
+		client.ResumeAll()
+		log.Println("resuming consumption")
+	} else {
+		client.PauseAll()
+		log.Println("pausing consumption")
+	}
+
+	*isPaused = !*isPaused
+}
+
 func main() {
 	keepRunning := true
 	log.Println("starting mirror consumer")
@@ -89,6 +101,25 @@ func main() {
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
+
+	for keepRunning {
+		select {
+		case <-ctx.Done():
+			log.Println("terminated: context canceled")
+			keepRunning = false
+		case <-sigterm:
+			log.Println("terminating via signal")
+			keepRunning = false
+
+		case <-sigusr1:
+			toggleConsumptionFlow(client, &consumptionPaused)
+		}
+	}
+	cancel()
+	wg.Wait()
+	if err = client.Close(); err != nil {
+		log.Panicf("error closing client: %v", err)
+	}
 
 	config, err := util.LoadConfig(".")
 	if err != nil {
