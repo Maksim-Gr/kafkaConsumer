@@ -78,6 +78,9 @@ func main() {
 		}
 	}()
 
+	<-consumer.ready
+	log.Println("mirror consumer is up and running!...")
+
 	config, err := util.LoadConfig(".")
 	if err != nil {
 		log.Fatal("cannot load config", err)
